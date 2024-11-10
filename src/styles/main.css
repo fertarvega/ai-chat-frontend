@@ -1,0 +1,34 @@
+.home-container {
+  height: 100vh;
+  display: grid;
+  grid-template-areas:
+    "aside chat-output chat-output"
+    "aside chat chat";
+  grid-template-columns: 48px 1fr;
+  grid-template-rows: 1fr auto;
+  padding: 16px;
+  gap: 16px;
+  transition: grid-template-columns 0.3s ease;
+}
+
+.home-container.sidebar-open {
+  grid-template-columns: 300px 1fr;
+}
+
+.home-container aside {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 16px;
+}
+
+@media screen and (max-width: 768px) {
+  .home-container {
+    grid-template-areas:
+      "aside"
+      "chat-output"
+      "chat";
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr auto;
+  }
+}
