@@ -73,7 +73,7 @@ const Home = () => {
   }, [history]);
 
   return (
-    <section className={`home-container ${hideSidebar ? "sidebar-open" : ""}`}>
+    <section className={`home-container ${!hideSidebar ? "sidebar-open" : ""}`}>
       <Sidebar hideSidebar={hideSidebar} setHideSidebar={setHideSidebar} />
       <article className="flex flex-col gap-1 overflow-y-auto">
         {history.map((item, index) => (
