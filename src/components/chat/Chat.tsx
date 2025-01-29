@@ -2,12 +2,10 @@ const Chat = ({
   message,
   setMessage,
   handleSubmit,
-  handleClear,
 }: {
   message: string;
   setMessage: (message: string) => void;
   handleSubmit: () => void;
-  handleClear: () => void;
 }) => {
   return (
     <div className="[grid-area:chat] flex flex-col md:flex-row gap-2">
@@ -29,9 +27,6 @@ const Chat = ({
         onClick={handleSubmit}
       >
         Send
-      </button>
-      <button onClick={handleClear} className="bg-emerald-800 rounded-md p-2">
-        Clear
       </button>
     </div>
   );

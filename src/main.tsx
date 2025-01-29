@@ -4,6 +4,7 @@ import "@/styles/index.css";
 import { createBrowserRouter } from "react-router-dom";
 import { RouterProvider } from "react-router-dom";
 import Home from "./pages/Home.tsx";
+import { ChatReferenceProvider } from "./context/ChatReference.tsx";
 
 const router = createBrowserRouter([
   {
@@ -14,8 +15,10 @@ const router = createBrowserRouter([
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <div className="dark:bg-black dark:text-white min-h-screen">
-      <RouterProvider router={router} />
-    </div>
+    <ChatReferenceProvider>
+      <div className="dark:bg-black dark:text-white min-h-screen">
+        <RouterProvider router={router} />
+      </div>
+    </ChatReferenceProvider>
   </StrictMode>
 );

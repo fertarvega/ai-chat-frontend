@@ -2,9 +2,9 @@
 import { useState } from "react";
 import Prism from "prismjs";
 import "prismjs/themes/prism-funky.css";
-import { ChatMessage } from "@/interfaces/chat";
+import { IMessage } from "@/interfaces/chat";
 
-const ChatOutput = ({ responseMessage }: { responseMessage: ChatMessage }) => {
+const ChatOutput = ({ responseMessage }: { responseMessage: IMessage }) => {
   const [isCopied, setIsCopied] = useState(false);
   const isCodeBlock = (text: string) => {
     return text.startsWith("```") && text.endsWith("```");
