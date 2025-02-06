@@ -4,7 +4,7 @@ import Prism from "prismjs";
 import "prismjs/themes/prism-funky.css";
 import { IMessage } from "@/interfaces/chat";
 
-const ChatOutput = ({ responseMessage }: { responseMessage: IMessage }) => {
+const ChatOuput = ({ responseMessage }: { responseMessage: IMessage }) => {
   const [isCopied, setIsCopied] = useState(false);
   const isCodeBlock = (text: string) => {
     return text.startsWith("```") && text.endsWith("```");
@@ -80,4 +80,4 @@ const ChatOutput = ({ responseMessage }: { responseMessage: IMessage }) => {
   );
 };
 
-export default ChatOutput;
+export default ChatOuput;

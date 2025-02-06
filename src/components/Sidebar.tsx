@@ -1,29 +1,24 @@
-import { IChat } from "@/interfaces/chat";
+import { IChat, IThreadChat } from "@/interfaces/chat";
 import { useEffect, useState } from "react";
-import { v4 as uuidv4 } from "uuid";
-import { useChatReference } from "@/context/ChatReference";
+import { useChatContext } from "@/context/ChatContext";
 
 const DB_NAME = import.meta.env.VITE_DB_NAME || "chatDB";
 const DB_VERSION = Number(import.meta.env.VITE_DB_VERSION) || 1;
 const STORE_NAME_CHATS = import.meta.env.VITE_STORE_NAME_CHATS || "chats";
+const STORE_NAME_THREADS = import.meta.env.VITE_STORE_NAME_THREADS || "threads";
 
-const Sidebar = ({
-  hideSidebar,
-
-  setHideSidebar,
-}: {
-  hideSidebar: boolean;
-  setHideSidebar: (hideSidebar: boolean) => void;
-}) => {
+const Sidebar = () => {
   const [chats, setChats] = useState<IChat[]>([]);
-  const { setChatUuid } = useChatReference();
+  const { setChatUuid, hideSidebar, setHideSidebar, setMessages } =
+    useChatContext();
 
   const handleHideSidebar = () => {
-    setHideSidebar(!hideSidebar);
+    setHideSidebar((prev) => !prev);
   };
 
   const handleNewChat = () => {
-    setChatUuid(uuidv4());
+    setChatUuid("");
+    setMessages([]);
   };
 
   const getChats = async () => {
@@ -39,6 +34,31 @@ const Sidebar = ({
         setChats(request.result);
       };
     };
+  };
+
+  const getChatFromDB = async (chatUuid: string) => {
+    const result: IThreadChat[] = await new Promise((resolve, reject) => {
+      const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+      request.onsuccess = (event) => {
+        const db = (event.target as IDBOpenDBRequest).result;
+        const transaction = db.transaction([STORE_NAME_THREADS], "readonly");
+        const store = transaction.objectStore(STORE_NAME_THREADS);
+        const index = store.index("chatUuid");
+        const request = index.getAll(chatUuid);
+
+        request.onsuccess = () => {
+          resolve(request.result);
+        };
+
+        request.onerror = () => {
+          reject(new Error("Error al obtener los hilos"));
+        };
+      };
+    });
+    result.sort((a, b) => a.created_at.getTime() - b.created_at.getTime());
+    setChatUuid(chatUuid);
+    setMessages(result.map((thread) => thread.message));
   };
 
   useEffect(() => {
@@ -63,18 +83,20 @@ const Sidebar = ({
         <option value="deepseek">DeepSeek R1</option>
         <option value="financial-api">(Trained) Financial API</option>
       </select>
-      {chats.sort((a, b) => b.created_at.getTime() - a.created_at.getTime()).map((chat) => (
-        <option
-          key={chat.id}
-          value={chat.id}
-          className="cursor-pointer"
-          onClick={() => {
-            setChatUuid(chat.id);
-          }}
-        >
-          {chat.id}
-        </option>
-      ))}
+      {chats
+        .sort((a, b) => b.created_at.getTime() - a.created_at.getTime())
+        .map((chat) => (
+          <option
+            key={chat.id}
+            value={chat.id}
+            className="cursor-pointer"
+            onClick={() => {
+              getChatFromDB(chat.id);
+            }}
+          >
+            {chat.id}
+          </option>
+        ))}
 
       <button onClick={handleNewChat}>New Chat</button>
     </aside>
