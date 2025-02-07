@@ -9,12 +9,16 @@ const STORE_NAME_CHATS = import.meta.env.VITE_STORE_NAME_CHATS || "chats";
 const STORE_NAME_THREADS = import.meta.env.VITE_STORE_NAME_THREADS || "threads";
 
 const ChatInput = () => {
-  const { chatUuid, setChatUuid, messages, setMessages } = useChatContext();
+  const { chatUuid, setChatUuid, messages, setMessages, setChats } =
+    useChatContext();
   const [textInput, setTextInput] = useState("");
 
   const handleSubmit = async () => {
-    if (!chatUuid) {
-      await createChat(uuidv4());
+    let auxChatUuid = chatUuid;
+
+    if (!auxChatUuid) {
+      auxChatUuid = uuidv4();
+      await createChat(auxChatUuid);
     }
 
     const userMessage: IMessage = {
@@ -27,17 +31,33 @@ const ChatInput = () => {
     auxThread.push(userMessage);
     setMessages(auxThread);
 
-    
     try {
-      await saveMessage(userMessage);
-      handleSendMessage(auxThread);
+      await saveMessage(userMessage, auxChatUuid);
+      await handleSendMessage(auxThread, auxChatUuid);
     } catch (error) {
       console.error("Error al guardar el mensaje:", error);
     }
   };
 
+  // 💥HOOK
+  const getChats = async () => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+    request.onsuccess = (event) => {
+      const db = (event.target as IDBOpenDBRequest).result;
+      const transaction = db.transaction([STORE_NAME_CHATS], "readonly");
+      const store = transaction.objectStore(STORE_NAME_CHATS);
+      const request = store.getAll();
+
+      request.onsuccess = () => {
+        setChats(request.result);
+      };
+    };
+  };
+
   const createChat = async (id: string): Promise<void> => {
     setChatUuid(id);
+
     const chat: IChat = {
       id: id,
       created_at: new Date(),
@@ -54,7 +74,9 @@ const ChatInput = () => {
         const addRequest = store.add(chat);
 
         addRequest.onsuccess = () => {
+          console.log("Chat iniciado", id);
           resolve();
+          getChats();
         };
 
         addRequest.onerror = () => {
@@ -65,13 +87,13 @@ const ChatInput = () => {
     });
   };
 
-  const handleSendMessage = async (auxHistory: IMessage[]) => {
+  const handleSendMessage = async (auxHistory: IMessage[], uuid: string) => {
     const response = await fetch("http://localhost:3000/chat", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ prompt: textInput }),
+      body: JSON.stringify({ prompt: textInput, uuid }),
     });
 
     const reader = response?.body?.getReader();
@@ -98,7 +120,7 @@ const ChatInput = () => {
         setMessages(auxFullResponseHistory);
 
         try {
-          await saveMessage(assistantMessage);
+          await saveMessage(assistantMessage, uuid);
         } catch (error) {
           console.error("Error al guardar la respuesta:", error);
         }
@@ -119,15 +141,16 @@ const ChatInput = () => {
     }
   };
 
-  const saveMessage = async (message: IMessage): Promise<void> => {
+  const saveMessage = async (
+    message: IMessage,
+    uuid: string
+  ): Promise<void> => {
     const thread: IThreadChat = {
       id: uuidv4(),
-      chatUuid: chatUuid,
+      chatUuid: uuid,
       created_at: new Date(),
       message,
     };
-    console.log(thread);
-    
 
     return new Promise((resolve, reject) => {
       const request = indexedDB.open(DB_NAME, DB_VERSION);

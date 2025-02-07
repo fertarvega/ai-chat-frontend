@@ -1,5 +1,5 @@
 import { IChat, IThreadChat } from "@/interfaces/chat";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useChatContext } from "@/context/ChatContext";
 
 const DB_NAME = import.meta.env.VITE_DB_NAME || "chatDB";
@@ -8,9 +8,16 @@ const STORE_NAME_CHATS = import.meta.env.VITE_STORE_NAME_CHATS || "chats";
 const STORE_NAME_THREADS = import.meta.env.VITE_STORE_NAME_THREADS || "threads";
 
 const Sidebar = () => {
-  const [chats, setChats] = useState<IChat[]>([]);
-  const { setChatUuid, hideSidebar, setHideSidebar, setMessages } =
-    useChatContext();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const {
+    chats,
+    setChats,
+    setChatUuid,
+    hideSidebar,
+    setHideSidebar,
+    setMessages,
+    chatUuid,
+  } = useChatContext();
 
   const handleHideSidebar = () => {
     setHideSidebar((prev) => !prev);
@@ -56,14 +63,133 @@ const Sidebar = () => {
         };
       };
     });
+
     result.sort((a, b) => a.created_at.getTime() - b.created_at.getTime());
     setChatUuid(chatUuid);
     setMessages(result.map((thread) => thread.message));
+
+    return result;
   };
 
   useEffect(() => {
     getChats();
   }, []);
+
+  const handleDownloadJSON = async () => {
+    const data = await getChatFromDB(chatUuid);
+    const jsonString = JSON.stringify(data, null, 2);
+    const blob = new Blob([jsonString], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `chat-history.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleUploadJson = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+
+      reader.onload = (event) => {
+        try {
+          const jsonData = JSON.parse(event.target?.result as string);
+          console.log("JSON:", jsonData);
+
+          // Guardar en IndexedDB
+          const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+          request.onsuccess = (event) => {
+            const db = (event.target as IDBOpenDBRequest).result;
+            const transaction = db.transaction(
+              [STORE_NAME_THREADS],
+              "readwrite"
+            );
+            const store = transaction.objectStore(STORE_NAME_THREADS);
+
+            // Insertar todos los registros en una sola transacción
+            jsonData.forEach((thread: IThreadChat) => {
+              store.add(thread);
+            });
+
+            transaction.oncomplete = () => {
+              console.log("Todos los registros guardados exitosamente");
+              setMessages(
+                jsonData.map((thread: IThreadChat) => thread.message)
+              );
+              setChatUuid(jsonData[0]?.chatUuid);
+            };
+
+            transaction.onerror = (error) => {
+              console.error("Error al guardar los registros:", error);
+            };
+          };
+        } catch (error) {
+          console.error(error);
+        }
+      };
+
+      reader.readAsText(file);
+      e.target.value = "";
+    }
+  };
+
+  const deleteChatFromDB = async (uuid: string) => {
+    try {
+      // 💥
+      const db = await new Promise<IDBDatabase>((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result);
+      });
+
+      const transaction = db.transaction(
+        [STORE_NAME_CHATS, STORE_NAME_THREADS],
+        "readwrite"
+      );
+      const chatStore = transaction.objectStore(STORE_NAME_CHATS);
+      const threadStore = transaction.objectStore(STORE_NAME_THREADS);
+
+      chatStore.delete(uuid);
+
+      const threadIndex = threadStore.index("chatUuid");
+      const threadRequest = threadIndex.getAllKeys(uuid);
+
+      threadRequest.onsuccess = () => {
+        const keys = threadRequest.result;
+        keys.forEach((key) => threadStore.delete(key));
+      };
+
+      return new Promise<void>((resolve, reject) => {
+        transaction.oncomplete = () => {
+          fetch(`http://localhost:3000/chat/delete?uuid=${uuid}`, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }).then((res) => {
+            if (!res.ok) {
+              throw new Error("Fallo el delete en la bd");
+            }
+            handleNewChat();
+            getChats();
+            resolve();
+          });
+        };
+        transaction.onerror = () => reject(transaction.error);
+      });
+    } catch (error) {
+      console.error("Error deleting chat:", error);
+      throw error;
+    }
+  };
 
   return (
     <aside className={`[grid-area:aside]`}>
@@ -74,31 +200,39 @@ const Sidebar = () => {
       >
         {hideSidebar ? "←" : "→"}
       </button>
-      <select
-        name="api"
-        id="api"
-        className="w-full border-2 border-gray-300 rounded-md p-2 dark:bg-gray-800 dark:text-white"
-      >
-        <option value="llama">LLama 3.3</option>
-        <option value="deepseek">DeepSeek R1</option>
-        <option value="financial-api">(Trained) Financial API</option>
-      </select>
       {chats
         .sort((a, b) => b.created_at.getTime() - a.created_at.getTime())
         .map((chat) => (
-          <option
+          <div
             key={chat.id}
-            value={chat.id}
-            className="cursor-pointer"
+            className="cursor-pointer flex text-nowrap py-2"
             onClick={() => {
               getChatFromDB(chat.id);
             }}
           >
-            {chat.id}
-          </option>
+            <p>{chat.id.slice(0, 25)}...</p>
+            <button
+              className="bg-red-500 px-2 ml-2"
+              onClick={(e) => {
+                e.stopPropagation();
+                deleteChatFromDB(chat.id);
+              }}
+            >
+              X
+            </button>
+          </div>
         ))}
 
       <button onClick={handleNewChat}>New Chat</button>
+      <button onClick={handleDownloadJSON}>Download Chat</button>
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleUploadJson}
+        accept=".json"
+        style={{ display: "none" }}
+      />
+      <button onClick={handleUploadClick}>Upload Chat</button>
     </aside>
   );
 };

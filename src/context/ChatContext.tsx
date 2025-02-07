@@ -1,4 +1,4 @@
-import { IMessage } from "@/interfaces/chat";
+import { IChat, IMessage } from "@/interfaces/chat";
 import {
   createContext,
   useContext,
@@ -9,6 +9,8 @@ import {
 } from "react";
 
 interface IChatReferenceContext {
+  chats: IChat[];
+  setChats: Dispatch<SetStateAction<IChat[]>>;
   chatUuid: string;
   setChatUuid: Dispatch<SetStateAction<string>>;
   hideSidebar: boolean;
@@ -22,6 +24,7 @@ const ChatReferenceContext = createContext<IChatReferenceContext>(
 );
 
 export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
+  const [chats, setChats] = useState<IChat[]>([]);
   const [chatUuid, setChatUuid] = useState("");
   const [hideSidebar, setHideSidebar] = useState(false);
   const [messages, setMessages] = useState<IMessage[]>([]);
@@ -29,6 +32,8 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
   return (
     <ChatReferenceContext.Provider
       value={{
+        chats,
+        setChats,
         chatUuid,
         setChatUuid,
         hideSidebar,
