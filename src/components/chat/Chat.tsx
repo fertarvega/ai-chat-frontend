@@ -15,7 +15,7 @@ export const Chat = () => {
 
   return (
     <>
-      <article className="flex flex-col gap-1 overflow-y-auto">
+      <article className="[grid-area:chat-output] flex flex-col gap-1 overflow-y-auto w-full items-center">
         {messages.map((item, index) => (
           <ChatOutput responseMessage={item} key={index} />
         ))}

@@ -13,8 +13,6 @@ interface IChatReferenceContext {
   setChats: Dispatch<SetStateAction<IChat[]>>;
   chatUuid: string;
   setChatUuid: Dispatch<SetStateAction<string>>;
-  hideSidebar: boolean;
-  setHideSidebar: Dispatch<SetStateAction<boolean>>;
   messages: IMessage[];
   setMessages: Dispatch<SetStateAction<IMessage[]>>;
 }
@@ -26,7 +24,6 @@ const ChatReferenceContext = createContext<IChatReferenceContext>(
 export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
   const [chats, setChats] = useState<IChat[]>([]);
   const [chatUuid, setChatUuid] = useState("");
-  const [hideSidebar, setHideSidebar] = useState(false);
   const [messages, setMessages] = useState<IMessage[]>([]);
 
   return (
@@ -36,8 +33,6 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
         setChats,
         chatUuid,
         setChatUuid,
-        hideSidebar,
-        setHideSidebar,
         messages,
         setMessages,
       }}

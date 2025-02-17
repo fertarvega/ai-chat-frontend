@@ -1,83 +1,104 @@
-/* eslint-disable no-useless-escape */
-import { useState } from "react";
-import Prism from "prismjs";
-import "prismjs/themes/prism-funky.css";
+import ReactMarkdown from "react-markdown";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { shadesOfPurple } from "react-syntax-highlighter/dist/cjs/styles/prism";
 import { IMessage } from "@/interfaces/chat";
+import { useState, useCallback } from "react";
 
-const ChatOuput = ({ responseMessage }: { responseMessage: IMessage }) => {
-  const [isCopied, setIsCopied] = useState(false);
-  const isCodeBlock = (text: string) => {
-    return text.startsWith("```") && text.endsWith("```");
-  };
+// Define your custom styles in a separate CSS file or styled-components
+import "@/styles/markdown.css"; // Create this file
 
-  const copyCode = (code: string) => {
-    navigator.clipboard.writeText(code);
-    setIsCopied(true);
+const ChatOutput = ({ responseMessage }: { responseMessage: IMessage }) => {
+  const [copyText, setCopyText] = useState<string>("Copy");
 
+  const copyToClipboard = useCallback((text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopyText("Copied!");
     setTimeout(() => {
-      setIsCopied(false);
+      setCopyText("Copy");
     }, 2000);
-  };
+  }, []);
 
-  const formatCodeBlock = (text: string) => {
-    const code = text.slice(3, -3).split("\n").slice(1, -1).join("\n");
-
-    return (
-      <pre className="bg-gray-100 dark:bg-gray-900 p-4 rounded-md overflow-x-auto flex flex-col">
-        <button onClick={() => copyCode(code)} className="self-end">
-          {isCopied ? <span className="text-green-300">Copiado</span> : "Copiar"}
-        </button>
-        {/* // TODO: Add language different from javascript */}
-        <code
-          dangerouslySetInnerHTML={{
-            __html: Prism.highlight(
-              code,
-              Prism.languages.javascript,
-              "javascript"
-            ),
-          }}
-        />
-      </pre>
-    );
-  };
+  const isUserMessage = responseMessage.role === "user";
 
   return (
-    <div className="[grid-area:chat-output] pr-2 md:px-2">
-      <div className="mb-2 p-2 border border-gray-300 rounded-md dark:bg-gray-800 dark:text-white">
-        <strong>
-          {responseMessage.role === "user" ? "User" : "Llama 3.2"}
-        </strong>
-        <div>
-          {responseMessage.content
-            .split(/(\`\`\`[\s\S]*?\`\`\`|\*\*.*?\*\*|\n)/)
-            .map((text, index) => {
-              if (isCodeBlock(text)) {
-                return formatCodeBlock(text);
-              }
-              if (text.startsWith("**") && text.endsWith("**")) {
-                return <strong key={index}>{text.slice(2, -2)}</strong>;
-              }
-              if (text.startsWith("* ")) {
-                return (
-                  <div key={index} className="flex flex-row">
-                    <span className="mr-2">•</span>
-                    <span>{text.slice(2)}</span>
-                  </div>
-                );
-              }
-              if (text.startsWith("\n")) {
-                return (
-                  <div key={index} className="flex flex-row mb-1">
-                    <span>{text}</span>
-                  </div>
-                );
-              }
-              return text;
-            })}
-        </div>
-      </div>
-    </div>
+    <section
+      className={`my-1 p-2 border border-gray-300 rounded-md dark:text-white max-w-[800px] w-full ${
+        isUserMessage ? "text-right" : ""
+      } ${isUserMessage ? "dark:bg-blue-900" : "dark:bg-gray-800"}`}
+    >
+      <article className="m-2 markdown-body" style={{ lineHeight: "1.6" }}>
+        <ReactMarkdown
+          components={{
+            code({ node, inline, className, children, ...props }) {
+              const match = /language-(\w+)/.exec(className || "");
+              return !inline && match ? (
+                <div className="relative">
+                  <button
+                    onClick={() => copyToClipboard(String(children))}
+                    className="absolute right-2 top-2 px-2 py-1 text-sm bg-gray-700 text-white rounded hover:bg-gray-600"
+                  >
+                    {copyText}
+                  </button>
+                  <SyntaxHighlighter
+                    style={shadesOfPurple}
+                    language={match[1]}
+                    PreTag="div"
+                    showLineNumbers={true}
+                    customStyle={{
+                      background: "#000",
+                      margin: 0,
+                      padding: "10px",
+                      lineHeight: "1.5",
+                      fontFamily: "monospace",
+                      fontSize: "14px",
+                    }}
+                    {...props}
+                  >
+                    {String(children).replace(/\n$/, "")}
+                  </SyntaxHighlighter>
+                </div>
+              ) : (
+                <code className={className} {...props}>
+                  {children}
+                </code>
+              );
+            },
+            h1: ({ node, ...props }) => (
+              <h1 className="markdown-h1" {...props} />
+            ),
+            h2: ({ node, ...props }) => (
+              <h2 className="markdown-h2" {...props} />
+            ),
+            h3: ({ node, ...props }) => (
+              <h3 className="markdown-h3" {...props} />
+            ),
+            ul: ({ node, ...props }) => (
+              <ul className="markdown-ul" {...props} />
+            ),
+            ol: ({ node, ...props }) => (
+              <ol className="markdown-ol" {...props} />
+            ),
+            li: ({ node, ...props }) => (
+              <li className="markdown-li" {...props} />
+            ),
+            strong: ({ node, ...props }) => (
+              <strong className="markdown-strong" {...props} />
+            ),
+            em: ({ node, ...props }) => (
+              <em className="markdown-em" {...props} />
+            ),
+          }}
+        >
+          {responseMessage.content}
+        </ReactMarkdown>
+        {!isUserMessage && (
+          <div className="text-xs text-gray-100 mt-2 text-right">
+            Respuesta generada con Llama 3.2
+          </div>
+        )}
+      </article>
+    </section>
   );
 };
 
-export default ChatOuput;
+export default ChatOutput;

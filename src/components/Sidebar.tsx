@@ -1,5 +1,5 @@
-import { IChat, IThreadChat } from "@/interfaces/chat";
-import { useEffect, useState, useRef } from "react";
+import { IThreadChat } from "@/interfaces/chat";
+import { useEffect } from "react";
 import { useChatContext } from "@/context/ChatContext";
 
 const DB_NAME = import.meta.env.VITE_DB_NAME || "chatDB";
@@ -8,20 +8,7 @@ const STORE_NAME_CHATS = import.meta.env.VITE_STORE_NAME_CHATS || "chats";
 const STORE_NAME_THREADS = import.meta.env.VITE_STORE_NAME_THREADS || "threads";
 
 const Sidebar = () => {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const {
-    chats,
-    setChats,
-    setChatUuid,
-    hideSidebar,
-    setHideSidebar,
-    setMessages,
-    chatUuid,
-  } = useChatContext();
-
-  const handleHideSidebar = () => {
-    setHideSidebar((prev) => !prev);
-  };
+  const { chats, setChats, setChatUuid, setMessages } = useChatContext();
 
   const handleNewChat = () => {
     setChatUuid("");
@@ -75,72 +62,6 @@ const Sidebar = () => {
     getChats();
   }, []);
 
-  const handleDownloadJSON = async () => {
-    const data = await getChatFromDB(chatUuid);
-    const jsonString = JSON.stringify(data, null, 2);
-    const blob = new Blob([jsonString], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `chat-history.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
-  const handleUploadClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleUploadJson = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const reader = new FileReader();
-
-      reader.onload = (event) => {
-        try {
-          const jsonData = JSON.parse(event.target?.result as string);
-          console.log("JSON:", jsonData);
-
-          // Guardar en IndexedDB
-          const request = indexedDB.open(DB_NAME, DB_VERSION);
-
-          request.onsuccess = (event) => {
-            const db = (event.target as IDBOpenDBRequest).result;
-            const transaction = db.transaction(
-              [STORE_NAME_THREADS],
-              "readwrite"
-            );
-            const store = transaction.objectStore(STORE_NAME_THREADS);
-
-            // Insertar todos los registros en una sola transacción
-            jsonData.forEach((thread: IThreadChat) => {
-              store.add(thread);
-            });
-
-            transaction.oncomplete = () => {
-              console.log("Todos los registros guardados exitosamente");
-              setMessages(
-                jsonData.map((thread: IThreadChat) => thread.message)
-              );
-              setChatUuid(jsonData[0]?.chatUuid);
-            };
-
-            transaction.onerror = (error) => {
-              console.error("Error al guardar los registros:", error);
-            };
-          };
-        } catch (error) {
-          console.error(error);
-        }
-      };
-
-      reader.readAsText(file);
-      e.target.value = "";
-    }
-  };
-
   const deleteChatFromDB = async (uuid: string) => {
     try {
       // 💥
@@ -192,27 +113,23 @@ const Sidebar = () => {
   };
 
   return (
-    <aside className={`[grid-area:aside]`}>
-      <button
-        className="rounded-md bg-slate-800 py-2 px-4 border border-transparent text-center text-sm text-white transition-all shadow-md hover:shadow-lg focus:bg-slate-700 focus:shadow-none active:bg-slate-700 hover:bg-slate-700 active:shadow-none disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none ml-auto hidden sm:block"
-        type="button"
-        onClick={handleHideSidebar}
-      >
-        {hideSidebar ? "←" : "→"}
-      </button>
+    <aside
+      className={`[grid-area:aside] flex flex-col gap-2 border-r border-gray-300`}
+    >
       {chats
         .sort((a, b) => b.created_at.getTime() - a.created_at.getTime())
         .map((chat) => (
           <div
             key={chat.id}
-            className="cursor-pointer flex text-nowrap py-2"
+            className="cursor-pointer flex justify-between items-center w-full mr-4 pr-2 pl-4 py-1 rounded-md hover:bg-gray-700 dark:hover:bg-gray-800 group"
             onClick={() => {
               getChatFromDB(chat.id);
             }}
+            title={chat.topic}
           >
-            <p>{chat.id.slice(0, 25)}...</p>
+            <p className="truncate">{chat.topic}</p>
             <button
-              className="bg-red-500 px-2 ml-2"
+              className="bg-gray-800 px-2 ml-2 hover:bg-red-900 rounded-xl hidden group-hover:block"
               onClick={(e) => {
                 e.stopPropagation();
                 deleteChatFromDB(chat.id);
@@ -224,15 +141,6 @@ const Sidebar = () => {
         ))}
 
       <button onClick={handleNewChat}>New Chat</button>
-      <button onClick={handleDownloadJSON}>Download Chat</button>
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleUploadJson}
-        accept=".json"
-        style={{ display: "none" }}
-      />
-      <button onClick={handleUploadClick}>Upload Chat</button>
     </aside>
   );
 };
