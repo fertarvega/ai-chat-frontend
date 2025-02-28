@@ -22,9 +22,9 @@ const ChatOutput = ({ responseMessage }: { responseMessage: IMessage }) => {
 
   return (
     <section
-      className={`my-1 p-2 border border-gray-300 rounded-md dark:text-white max-w-[800px] w-full ${
+      className={`my-1 p-2 border border-gray-300 rounded-xl dark:text-white max-w-[795px] w-full ${
         isUserMessage ? "text-right" : ""
-      } ${isUserMessage ? "dark:bg-blue-900" : "dark:bg-gray-800"}`}
+      } ${isUserMessage ? "dark:bg-blue-600" : "dark:bg-gray-800"}`}
     >
       <article className="m-2 markdown-body" style={{ lineHeight: "1.6" }}>
         <ReactMarkdown
@@ -93,7 +93,7 @@ const ChatOutput = ({ responseMessage }: { responseMessage: IMessage }) => {
         </ReactMarkdown>
         {!isUserMessage && (
           <div className="text-xs text-gray-100 mt-2 text-right">
-            Respuesta generada con Llama 3.2
+            Generated with Llama 3.3 (Groq)
           </div>
         )}
       </article>

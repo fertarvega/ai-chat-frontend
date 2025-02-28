@@ -4,13 +4,13 @@
 
 ::-webkit-scrollbar {
   width: 5px;
-  background: #a1a1a1;
+  background: #1f2937;
   border-radius: 10px;
   height: 5px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #19378a;
+  background: #2563eb;
   border-radius: 10px;
 }
 

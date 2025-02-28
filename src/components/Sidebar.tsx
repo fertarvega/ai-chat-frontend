@@ -1,11 +1,12 @@
 import { IThreadChat } from "@/interfaces/chat";
 import { useEffect } from "react";
 import { useChatContext } from "@/context/ChatContext";
-
-const DB_NAME = import.meta.env.VITE_DB_NAME || "chatDB";
-const DB_VERSION = Number(import.meta.env.VITE_DB_VERSION) || 1;
-const STORE_NAME_CHATS = import.meta.env.VITE_STORE_NAME_CHATS || "chats";
-const STORE_NAME_THREADS = import.meta.env.VITE_STORE_NAME_THREADS || "threads";
+import {
+  DB_VERSION,
+  DB_NAME,
+  STORE_NAME_CHATS,
+  STORE_NAME_THREADS,
+} from "@/helpers/constsDatabase";
 
 const Sidebar = () => {
   const { chats, setChats, setChatUuid, setMessages } = useChatContext();
@@ -58,10 +59,6 @@ const Sidebar = () => {
     return result;
   };
 
-  useEffect(() => {
-    getChats();
-  }, []);
-
   const deleteChatFromDB = async (uuid: string) => {
     try {
       // 💥
@@ -91,7 +88,7 @@ const Sidebar = () => {
       return new Promise<void>((resolve, reject) => {
         transaction.oncomplete = () => {
           fetch(`http://localhost:3000/chat/delete?uuid=${uuid}`, {
-            method: "GET",
+            method: "DELETE",
             headers: {
               "Content-Type": "application/json",
             },
@@ -112,35 +109,43 @@ const Sidebar = () => {
     }
   };
 
+  useEffect(() => {
+    getChats();
+  }, []);
+
   return (
     <aside
-      className={`[grid-area:aside] flex flex-col gap-2 border-r border-gray-300`}
+      className={`[grid-area:aside] flex flex-col border-r border-gray-300 pr-2`}
     >
+      <button
+        className="bg-blue-600 text-white p-2 rounded-xl w-full hover:bg-blue-700"
+        onClick={handleNewChat}
+      >
+        New Chat
+      </button>
       {chats
         .sort((a, b) => b.created_at.getTime() - a.created_at.getTime())
         .map((chat) => (
           <div
             key={chat.id}
-            className="cursor-pointer flex justify-between items-center w-full mr-4 pr-2 pl-4 py-1 rounded-md hover:bg-gray-700 dark:hover:bg-gray-800 group"
+            className="cursor-pointer flex justify-between items-center w-full py-1 px-2 rounded-xl hover:bg-gray-700 dark:hover:bg-gray-800 group"
             onClick={() => {
               getChatFromDB(chat.id);
             }}
             title={chat.topic}
           >
             <p className="truncate">{chat.topic}</p>
-            <button
-              className="bg-gray-800 px-2 ml-2 hover:bg-red-900 rounded-xl hidden group-hover:block"
+            <img
+              src="/icon-bin.svg"
+              alt="trash"
+              className="w-6 h-6 cursor-pointer hover:bg-red-900 rounded-xl hidden group-hover:block p-1"
               onClick={(e) => {
                 e.stopPropagation();
                 deleteChatFromDB(chat.id);
               }}
-            >
-              X
-            </button>
+            />
           </div>
         ))}
-
-      <button onClick={handleNewChat}>New Chat</button>
     </aside>
   );
 };
