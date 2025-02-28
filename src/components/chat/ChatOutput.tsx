@@ -3,9 +3,7 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { shadesOfPurple } from "react-syntax-highlighter/dist/cjs/styles/prism";
 import { IMessage } from "@/interfaces/chat";
 import { useState, useCallback } from "react";
-
-// Define your custom styles in a separate CSS file or styled-components
-import "@/styles/markdown.css"; // Create this file
+import "@/styles/markdown.css";
 
 const ChatOutput = ({ responseMessage }: { responseMessage: IMessage }) => {
   const [copyText, setCopyText] = useState<string>("Copy");
@@ -93,7 +91,7 @@ const ChatOutput = ({ responseMessage }: { responseMessage: IMessage }) => {
         </ReactMarkdown>
         {!isUserMessage && (
           <div className="text-xs text-gray-100 mt-2 text-right">
-            Generated with Llama 3.3 (Groq)
+            Generated with Llama 3.2 (Groq)
           </div>
         )}
       </article>
