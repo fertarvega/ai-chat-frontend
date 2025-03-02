@@ -1,50 +1,43 @@
-# React + TypeScript + Vite
+# AI Chat Application
+This is a chat application that allows users to interact with Llama 3.3 AI model through a clean interface. The application provides a seamless experience for having conversations with an AI assistant, with support for markdown formatting, code highlighting, and chat history management.
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
-
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
-
-- Configure the top-level `parserOptions` property like this:
-
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+## How to use it
+Clone the repository and start the project using
+```bash
+npm run dev
 ```
+Note: The project requires the backend part to function properly.
+URL: https://github.com/fertarvega/ai-chat-backend
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
+## Main Features
+- **Real-time AI Conversations**: Interact with Llama 3.3 AI model through Groq's API.
+- **Streaming Responses**: AI responses are streamed in real-time for a natural conversation experience.
+- **Markdown Support**: Full markdown rendering including code blocks, headings, lists, and more.
+- **Syntax Highlighting**: Code snippets are displayed with syntax highlighting.
+- **Chat History**: All conversations are saved locally and can be accessed later.
+- **Offline Support**: Uses IndexedDB for local storage of chat history.
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
+## Technical Implementation
+- **Frontend**: React with TypeScript.
+- **Styling**: Tailwind CSS.
+- **State Management**: React Context API for global state.
+- **Storage**: IndexedDB for local persistence of chats and messages.
+- **Markdown**: ReactMarkdown for rendering markdown content.
+- **Code Highlighting**: react-syntax-highlighter for code blocks.
 
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
-```
+## Key Components
+1. **Chat Interface**: Main chat area with message history and input field.
+2. **Sidebar**: Navigation panel showing chat history and allowing creation of new chats.
+3. **ChatInput**: Text area for user input.
+4. **ChatOutput**: Component for rendering AI and user messages with markdown support.
+
+## Data Flow
+1. User inputs a message in the ChatInput component.
+2. Message is sent to the backend API.
+3. AI response is streamed back and displayed in real-time.
+4. Both user messages and AI responses are stored in IndexedDB.
+5. Chat history is accessible through the sidebar.
+
+#### To Do:
+1. Responsive design.
+2. AI model selector.
